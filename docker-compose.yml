@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build: .
+    container_name: discord-soundboard-bot
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CLIENT_ID=${CLIENT_ID}
+      - GUILD_ID=${GUILD_ID}
+      - BOT_OWNER_ID=${BOT_OWNER_ID}
+      - LOG_LEVEL=info
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
