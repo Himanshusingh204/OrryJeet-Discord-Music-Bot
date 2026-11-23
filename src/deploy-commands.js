@@ -1,53 +1,38 @@
-import 'dotenv/config';
-import { REST, Routes } from 'discord.js';
-import { fileURLToPath, pathToFileURL } from 'url';
-import { dirname, join } from 'path';
-import fs from 'fs';
-import { logger } from './utils/logger.js';
+const fs = require('node:fs');
+const path = require('node:path');
+const { REST, Routes } = require('discord.js');
+const { config, requireConfig } = require('./config');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const token = process.env.DISCORD_TOKEN;
-const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID;
-
-if (!token || !clientId) {
-  logger.error('Missing DISCORD_TOKEN or CLIENT_ID in .env');
-  process.exit(1);
-}
+requireConfig(['token', 'clientId']);
 
 const commands = [];
-const commandsPath = join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const commandsPath = path.join(__dirname, 'commands');
 
-for (const file of commandFiles) {
-  const filePath = join(commandsPath, file);
-  const { default: command } = await import(pathToFileURL(filePath).href);
-
-  if ('data' in command && 'execute' in command) {
-    commands.push(command.data.toJSON());
-    logger.info(`✓ Loaded command: ${command.data.name}`);
-  }
+for (const file of fs.readdirSync(commandsPath).filter((entry) => entry.endsWith('.js'))) {
+  const command = require(path.join(commandsPath, file));
+  commands.push(command.data.toJSON());
 }
 
-const rest = new REST({ version: '10' }).setToken(token);
+const rest = new REST({ version: '10' }).setToken(config.token);
 
 (async () => {
   try {
-    logger.info(`🔄 Registering ${commands.length} slash command(s)...`);
-
-    if (guildId) {
-      // Register guild-specific commands (faster, for testing)
-      await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
-      logger.info(`✅ Successfully registered ${commands.length} command(s) to guild ${guildId}`);
-    } else {
-      // Register global commands (takes up to 1 hour to propagate)
-      await rest.put(Routes.applicationCommands(clientId), { body: commands });
-      logger.info(`✅ Successfully registered ${commands.length} global command(s) (may take up to 1 hour to propagate)`);
+    if (config.guildId && config.guildId !== 'OPTIONAL_TEST_GUILD_ID_FOR_FAST_COMMAND_DEPLOY') {
+      await rest.put(
+        Routes.applicationGuildCommands(config.clientId, config.guildId),
+        { body: commands }
+      );
+      console.log(`Deployed ${commands.length} guild commands.`);
+      return;
     }
+
+    await rest.put(
+      Routes.applicationCommands(config.clientId),
+      { body: commands }
+    );
+    console.log(`Deployed ${commands.length} global commands.`);
   } catch (error) {
-    logger.error('Error deploying commands:', error);
-    process.exit(1);
+    console.error(error);
+    process.exitCode = 1;
   }
 })();

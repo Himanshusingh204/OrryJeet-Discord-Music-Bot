@@ -1,45 +1,30 @@
 {
-  "name": "orryjeet-discord-music-bot",
-  "version": "1.1.0",
-  "description": "Enterprise Discord audio streaming engine and cloud soundboard with 48kHz Opus fidelity",
-  "main": "src/bot.js",
-  "type": "module",
+  "name": "discord-music-soundboard-bot",
+  "version": "1.0.0",
+  "description": "Discord.js v14 music and soundboard bot using discord-player and play-dl.",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node src/bot.js",
-    "dev": "nodemon src/bot.js",
+    "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
-    "check": "node --check src/bot.js src/deploy-commands.js src/commands/*.js src/events/*.js src/utils/*.js",
-    "test": "node --test test/*.test.js"
+    "deploy-and-start": "npm run deploy && npm start"
   },
   "keywords": [
     "discord",
-    "music-bot",
-    "soundboard",
-    "opus",
-    "audio-streaming",
-    "discordjs-v14"
+    "discord.js",
+    "music",
+    "soundboard"
   ],
-  "author": "OrryJeet Engineering Team",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Himanshusingh204/OrryJeet-Discord-Music-Bot.git"
-  },
   "dependencies": {
-    "@discordjs/voice": "^0.16.0",
-    "axios": "^1.6.2",
-    "discord.js": "^14.14.0",
-    "dotenv": "^16.3.1",
-    "ffmpeg-static": "^5.2.0",
+    "@discordjs/voice": "^0.19.2",
+    "debug": "^4.4.3",
+    "discord-player": "^6.7.1",
+    "discord.js": "^14.16.3",
+    "opusscript": "^0.0.8",
     "play-dl": "^1.9.7",
-    "sqlite": "^5.0.1",
-    "sqlite3": "^5.1.6",
-    "winston": "^3.11.0"
+    "youtube-dl-exec": "^3.1.19"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+  "allowScripts": {
+    "youtube-dl-exec@3.1.12": true
   }
 }

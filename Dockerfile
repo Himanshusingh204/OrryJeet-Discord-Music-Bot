@@ -1,35 +1,36 @@
-FROM node:18-alpine
+FROM node:22-bookworm-slim AS dependencies
 
-# Install system audio and compilation tools
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    ffmpeg \
-    git \
-    yt-dlp
+WORKDIR /app
+ENV YOUTUBE_DL_SKIP_PYTHON_CHECK=1
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+FROM node:22-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Copy dependency manifests
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg ca-certificates python3 curl unzip \
+  && curl -fsSL -o /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip \
+  && unzip -o /tmp/deno.zip -d /usr/local/bin \
+  && chmod +x /usr/local/bin/deno \
+  && rm /tmp/deno.zip \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY package*.json ./
-
-# Install production dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy source code and config
 COPY src ./src
-COPY ecosystem.config.json ./
+COPY data/.gitkeep ./data/.gitkeep
 
-# Ensure data and logs directories exist with correct permissions
-RUN mkdir -p ./data/custom_sounds ./logs && chown -R node:node /app
+#RUN chown -R node:node /app
 
-# Non-root user for security compliance
-USER node
+#USER node
 
-# Container healthcheck
-HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-  CMD node -e "process.exit(0)"
-
-# Start bot process
-CMD ["node", "src/bot.js"]
+CMD ["npm", "start"]
